@@ -1,7 +1,7 @@
 const { createClient } = window.supabase;
-const SUPABASE_URL = "https://fzoncqqwztcsqajjesrq.supabase.co";
+const SUPABASE_URL = "https://efddussnhxfdlgpxuzyh.supabase.co";
 const SUPABASE_ANON_KEY =
-    "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZ6b25jcXF3enRjc3Fhamplc3JxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQ2OTMwNzAsImV4cCI6MjA5MDI2OTA3MH0.xfiXna3jPtTS5y6KkllT2_6CMuFGZA6qvX04JZLio8I";
+    "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVmZGR1c3NuaHhmZGxncHh1enloIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzkxNjYwMjUsImV4cCI6MjA5NDc0MjAyNX0.P0kgqlncsD_O4ETPytiTPCRXraU1cgsX3MWopohYHAM";
 const BUCKET_NAME = "Videos";
 
 const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
