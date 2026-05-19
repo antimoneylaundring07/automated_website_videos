@@ -7,6 +7,7 @@ const BUCKET_NAME = "Videos";
 const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
 const uploadStatus = document.getElementById("uploadStatus");
+const uploadBtn = document.getElementById("uploadBtn");
 const totalCountEl = document.getElementById("totalCount");
 const progressText = document.getElementById("progressText");
 const progressBar = document.getElementById("progressBar");
@@ -52,7 +53,7 @@ const loadStats = async () => {
 // ─────────────────────────────────────────────
 //  UPLOAD
 // ─────────────────────────────────────────────
-document.getElementById("uploadBtn").addEventListener("click", async () => {
+uploadBtn.addEventListener("click", async () => {
     const fileInput = document.getElementById("videoInput");
     const files = fileInput.files;
 
@@ -62,6 +63,7 @@ document.getElementById("uploadBtn").addEventListener("click", async () => {
         return;
     }
 
+    uploadBtn.disabled = true;
     progressBar.style.width = "0%";
     progressText.textContent = `0 / ${files.length} files`;
     uploadStatus.textContent = "";
@@ -69,6 +71,7 @@ document.getElementById("uploadBtn").addEventListener("click", async () => {
 
     let successCount = 0;
     let errorCount = 0;
+    const failedFiles = [];
 
     for (let i = 0; i < files.length; i++) {
         const file = files[i];
@@ -80,6 +83,7 @@ document.getElementById("uploadBtn").addEventListener("click", async () => {
 
         if (error) {
             errorCount++;
+            failedFiles.push({ name: file.name, message: error.message || "Unknown error" });
             console.error("Upload failed:", fileName, error);
         } else {
             successCount++;
@@ -93,13 +97,19 @@ document.getElementById("uploadBtn").addEventListener("click", async () => {
     }
 
     if (errorCount > 0) {
-        uploadStatus.textContent = `Upload Status: ${successCount} Upload, ${errorCount} Exist.`;
+        const preview = failedFiles
+            .slice(0, 10)
+            .map((item) => `${item.name}: ${item.message}`)
+            .join(" | ");
+
+        uploadStatus.textContent = `Upload complete: ${successCount} succeeded, ${errorCount} failed. ${failedFiles.length > 10 ? "First 10 failures: " : ""}${preview}`;
         uploadStatus.className = "status error";
     } else {
         uploadStatus.textContent = `Upload OK! ${successCount} file(s) uploaded.`;
         uploadStatus.className = "status success";
     }
 
+    uploadBtn.disabled = false;
     loadStats();
 });
 
@@ -445,12 +455,57 @@ document.getElementById("downloadFoundBtn").addEventListener("click", async () =
     await downloadFiles(searchFoundUrls, "Found");
 });
 
+document.getElementById("downloadAllBtn").addEventListener("click", async () => {
+    const statusEl = document.getElementById("downloadAllStatus");
+    statusEl.style.display = "block";
+    statusEl.className = "status";
+    statusEl.textContent = "Loading video list...";
+
+    try {
+        let allFiles = [];
+        let page = 1;
+        const pageSize = 1000;
+
+        while (true) {
+            const { data, error } = await supabase.storage
+                .from(BUCKET_NAME)
+                .list("uploads/", {
+                    limit: pageSize,
+                    offset: (page - 1) * pageSize,
+                });
+
+            if (error) {
+                throw error;
+            }
+
+            if (!data || data.length === 0) break;
+            allFiles = allFiles.concat(data);
+            if (data.length < pageSize) break;
+            page++;
+        }
+
+        if (allFiles.length === 0) {
+            statusEl.textContent = "No videos found to download.";
+            statusEl.className = "status error";
+            return;
+        }
+
+        const items = allFiles.map((file) => ({ fileName: file.name }));
+        await downloadFiles(items, "All", statusEl);
+    } catch (err) {
+        statusEl.textContent = "Download all error: " + err.message;
+        statusEl.className = "status error";
+    }
+});
+
 // document.getElementById("downloadNotFoundBtn").addEventListener("click", async () => {
 //     await downloadFiles(searchNotFoundUrls, "NotFound");
 // });
 
-async function downloadFiles(urlList, label) {
-    const statusEl = document.getElementById("mergedDownloadStatus");
+async function downloadFiles(urlList, label, statusEl = null) {
+    if (!statusEl) {
+        statusEl = document.getElementById("mergedDownloadStatus");
+    }
 
     if (!urlList || urlList.length === 0) {
         statusEl.textContent = "No files to download.";
